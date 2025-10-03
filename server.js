@@ -4,7 +4,7 @@ const cors = require("cors");
 const sqlite3 = require("sqlite3").verbose();
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 // Middlewares
 app.use(cors());
@@ -144,6 +144,6 @@ app.delete("/stocks_history", (req, res) => {
 });
 
 // Iniciar servidor
-app.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
+app.listen(process.env.PORT || 3001, '0.0.0.0', () => {
+  console.log(`Servidor rodando em http://localhost:${process.env.PORT || 3001}`);
 });
