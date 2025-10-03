@@ -12,9 +12,13 @@ app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ limit: "100mb", extended: true }));
 
 // Criar pool de conexões para PostgreSQL
+// A variável DATABASE_URL é a URL INTERNA COMPLETA
+const isProduction = process.env.NODE_ENV === "production";
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
+  // Adicione estas linhas para forçar o SSL de forma explícita e correta
+  ssl: isProduction ? { rejectUnauthorized: false } : false,
 });
 
 
