@@ -147,3 +147,12 @@ app.delete("/stocks_history", (req, res) => {
 app.listen(process.env.PORT || 3001, '0.0.0.0', () => {
   console.log(`Servidor rodando em http://localhost:${process.env.PORT || 3001}`);
 });
+
+// Buscar todos os tickers únicos
+app.get("/tickers", (req, res) => {
+  db.all("SELECT DISTINCT ticker FROM stocks_history", [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    const tickers = rows.map(r => r.ticker);
+    res.json(tickers);
+  });
+});
