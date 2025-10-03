@@ -14,7 +14,7 @@ app.use(express.urlencoded({ limit: "100mb", extended: true }));
 // Criar pool de conexões para PostgreSQL
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
+  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
 });
 
 
