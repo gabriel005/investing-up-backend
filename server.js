@@ -2,6 +2,7 @@
 const express = require("express");
 const cors = require("cors");
 const sqlite3 = require("sqlite3").verbose();
+const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -11,8 +12,9 @@ app.use(cors());
 app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ limit: "100mb", extended: true }));
 
-// Conectar ao banco SQLite (cria se não existir)
-const db = new sqlite3.Database("./database.sqlite", (err) => {
+// Caminho absoluto para o SQLite (evita problemas em produção)
+const dbPath = path.join(process.cwd(), "database.sqlite");
+const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error("Erro ao abrir o banco:", err.message);
   } else {
@@ -49,7 +51,7 @@ app.get("/", (req, res) => {
 
 // Inserir histórico completo (POST)
 app.post("/stocks_history", (req, res) => {
-  const jsonData = req.body; // Recebe array de objetos
+  const jsonData = req.body;
 
   const stmt = db.prepare(`
     INSERT OR REPLACE INTO stocks_history (
@@ -64,10 +66,8 @@ app.post("/stocks_history", (req, res) => {
     let timestamp;
 
     if (item.date) {
-      // Se veio timestamp ou string numérica
       timestamp = Number(item.date);
     } else if (item.data) {
-      // fallback para "data" se existir
       if (typeof item.data === "string") {
         const [day, month, year] = item.data.split("/");
         timestamp = new Date(Number(year), Number(month) - 1, Number(day)).getTime();
@@ -105,13 +105,16 @@ app.post("/stocks_history", (req, res) => {
 // Buscar histórico de um ticker (GET)
 app.get("/stocks_history/:ticker", (req, res) => {
   const ticker = req.params.ticker.toUpperCase();
+
   db.all(
     "SELECT * FROM stocks_history WHERE ticker = ? ORDER BY date ASC",
     [ticker],
     (err, rows) => {
-      if (err) return res.status(500).json({ error: err.message });
+      if (err) {
+        console.error("Erro SQLite:", err.message);
+        return res.status(500).json({ error: err.message });
+      }
 
-      // Garantir que date seja número
       const formattedRows = rows.map((r) => ({
         ...r,
         date: Number(r.date),
@@ -143,11 +146,6 @@ app.delete("/stocks_history", (req, res) => {
   });
 });
 
-// Iniciar servidor
-app.listen(process.env.PORT || 3001, '0.0.0.0', () => {
-  console.log(`Servidor rodando em http://localhost:${process.env.PORT || 3001}`);
-});
-
 // Buscar todos os tickers únicos
 app.get("/tickers", (req, res) => {
   db.all("SELECT DISTINCT ticker FROM stocks_history", [], (err, rows) => {
@@ -155,4 +153,9 @@ app.get("/tickers", (req, res) => {
     const tickers = rows.map(r => r.ticker);
     res.json(tickers);
   });
+});
+
+// Iniciar servidor
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Servidor rodando em http://localhost:${PORT}`);
 });
